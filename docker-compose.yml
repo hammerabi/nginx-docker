@@ -1,0 +1,14 @@
+version: '2'
+services:
+  nginx:
+    image: 'nginx:latest'
+    ports: 
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./data/nginx-command:/nginx-command
+      - ./data/conf.d:/etc/nginx/conf.d
+      - ./data/cache.conf:/etc/nginx/cache.conf
+      - ./data/certs:/etc/nginx/certs
+      - ./tmp:/var/log/nginx
+

@@ -1,0 +1,36 @@
+#!/bin/bash
+function replace-all-env-vars () {
+  # Work with either `cat /file | replace-all-env-vars` and
+  # `replace-all-env-vars /file`
+  [ $# -ge 1 -a -f "$1" ] && input="$1" || input="-"
+  local contents=$(cat $input)
+
+  # Loop through each environment variable name
+  for v in $(env | cut -d '=' -f1); do
+    # Only look for things like `__PATH__`
+    local needle="__${v}__"
+    if [[ "${contents}" =~ "${needle}" ]]; then
+      # Replace all instances of needle with the value of `$v`
+      contents="${contents//$needle/${!v}}"
+    fi
+  done
+
+  echo "${contents}"
+}
+
+#replace-all-env-vars /etc/nginx/conf.d/owncloud.conf-example > /etc/nginx/conf.d/owncloud.conf
+#replace-all-env-vars /etc/nginx/conf.d/jenkins.conf-example > /etc/nginx/conf.d/jenkins.conf
+#replace-all-env-vars /etc/nginx/conf.d/docker.conf-example > /etc/nginx/conf.d/docker.conf
+#replace-all-env-vars /etc/nginx/conf.d/gitlab.conf-example > /etc/nginx/conf.d/gitlab.conf
+
+# Set worker_processes to the number of CPUs
+num_processors=$(grep -c ^processor /proc/cpuinfo)
+sed -i -E -e 's/worker_processes.+;/worker_processes '${num_processors}';/' /etc/nginx/nginx.conf
+
+# Set server_names_hash_bucket_size for long server names
+if ! grep server_names_hash_bucket_size /etc/nginx/nginx.conf; then
+  sed -i -E "s/http\s*\{/http {\n    server_names_hash_bucket_size 128;/" /etc/nginx/nginx.conf
+fi
+
+exec nginx -g "daemon off;"
+
